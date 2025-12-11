@@ -1,5 +1,7 @@
 __author__ = "Antoine Richard"
-__copyright__ = "Copyright 2023-24, Space Robotics Lab, SnT, University of Luxembourg, SpaceR"
+__copyright__ = (
+    "Copyright 2023-24, Space Robotics Lab, SnT, University of Luxembourg, SpaceR"
+)
 __license__ = "BSD 3-Clause"
 __version__ = "2.0.0"
 __maintainer__ = "Antoine Richard"
@@ -8,9 +10,13 @@ __status__ = "development"
 
 
 def startSim(cfg: dict):
-    from isaacsim import SimulationApp
+    from isaacsim.simulation_app import SimulationApp
     import omni
-    from src.environments.rendering import set_lens_flares, set_chromatic_aberrations, set_motion_blur
+    from src.environments.rendering import (
+        set_lens_flares,
+        set_chromatic_aberrations,
+        set_motion_blur,
+    )
 
     class SimulationApp_wait(SimulationApp):
         def __init__(self, launch_config: dict = None, experience: str = "") -> None:
@@ -88,10 +94,44 @@ def startSim(cfg: dict):
 
     # Starts the simulation and allows to import things related to Isaac and PXR
     renderer_cfg = cfg["rendering"]["renderer"]
-    simulation_app = SimulationApp_wait(renderer_cfg.__dict__)
+    launch_config = renderer_cfg.__dict__.copy()
+
+    # Extract livestream config to handle it manually and avoid SimulationApp defaulting to potentially missing extensions
+    livestream_mode = launch_config.pop("livestream", 0)
+
+    print(f"Starting SimulationApp with config: {launch_config}")
+    # simulation_app = SimulationApp_wait(launch_config)
+    simulation_app = SimulationApp(launch_config)
+
+    if livestream_mode == 2:
+        import omni.kit.app
+
+        manager = omni.kit.app.get_app().get_extension_manager()
+
+        # Enable the extension
+        if manager.is_extension_enabled("omni.kit.livestream.webrtc"):
+            print("WebRTC extension (omni.kit.livestream.webrtc) is already enabled.")
+        elif manager.set_extension_enabled("omni.kit.livestream.webrtc", True):
+            print("WebRTC extension (omni.kit.livestream.webrtc) enabled successfully.")
+        else:
+            print(
+                "WARNING: Request to enable 'omni.kit.livestream.webrtc' returned False. It might be enabled by another process or dependency."
+            )
+
+        # Ensure settings are correct regardless of how it was enabled
+        import carb.settings
+
+        carb.settings.get_settings().set_bool("/app/livestream/enabled", True)
+        # Potentially needed settings for WebRTC
+        carb.settings.get_settings().set_bool("/app/livestream/webrtc/enabled", True)
+
     set_lens_flares(cfg)
     set_motion_blur(cfg)
     set_chromatic_aberrations(cfg)
+
+    set_chromatic_aberrations(cfg)
+
+    print(f"DEBUG: cfg['mode']['name'] = {cfg['mode']['name']}", flush=True)
 
     # Starts the ROS2 extension. Allows to import ROS2 related things.
     if cfg["mode"]["name"] == "ROS2":
@@ -133,5 +173,17 @@ def startSim(cfg: dict):
         )
 
         SM = SDG_SimulationManager(cfg, simulation_app)
+
+    print("DEBUG: SimulationApp started.", flush=True)
+
+    # Starts the TCP extension. Connect from any external client/language.
+    if cfg["mode"]["name"] == "TCP":
+        print("DEBUG: Importing TCP Manager...", flush=True)
+        from src.environments_wrappers.tcp.simulation_manager_tcp import (
+            TCP_SimulationManager,
+        )
+
+        print("DEBUG: Instantiating TCP Manager...", flush=True)
+        SM = TCP_SimulationManager(cfg, simulation_app)
 
     return SM, simulation_app

@@ -1,5 +1,7 @@
 __author__ = "Antoine Richard"
-__copyright__ = "Copyright 2023, Space Robotics Lab, SnT, University of Luxembourg, SpaceR"
+__copyright__ = (
+    "Copyright 2023, Space Robotics Lab, SnT, University of Luxembourg, SpaceR"
+)
 __license__ = "GPL"
 __version__ = "1.0.0"
 __maintainer__ = "Antoine Richard"
@@ -26,13 +28,51 @@ class ROS_RobotManager(Node):
         super().__init__("Robot_spawn_manager_node")
         self.RM = RobotManager(RM_conf)
 
-        self.create_subscription(PoseStamped, "/OmniLRS/Robots/Spawn", self.spawn_robot, 1)
-        self.create_subscription(PoseStamped, "/OmniLRS/Robots/Teleport", self.teleport_robot, 1)
+        self.create_subscription(
+            PoseStamped, "/OmniLRS/Robots/Spawn", self.spawn_robot, 1
+        )
+        self.create_subscription(
+            PoseStamped, "/OmniLRS/Robots/Teleport", self.teleport_robot, 1
+        )
         self.create_subscription(String, "/OmniLRS/Robots/Reset", self.reset_robot, 1)
-        self.create_subscription(Empty, "/OmniLRS/Robots/ResetAll", self.reset_robots, 1)
+        self.create_subscription(
+            Empty, "/OmniLRS/Robots/ResetAll", self.reset_robots, 1
+        )
+
+        # Add subscription to cmd_vel for manual python-based control
+        from geometry_msgs.msg import Twist
+
+        self.create_subscription(Twist, "/manual_cmd_vel", self.cmd_vel_callback, 10)
 
         self.domain_id = 0
         self.modifications: List[Tuple[callable, dict]] = []
+
+    def cmd_vel_callback(self, msg):
+        """
+        Callback for cmd_vel messages. Drives the first available robot.
+        """
+        if not self.RM.robots:
+            return
+
+        # Assuming we control the first robot found
+        robot_name = list(self.RM.robots.keys())[0]
+        robot = self.RM.robots[robot_name]
+
+        print(
+            f"DEBUG: cmd_vel_callback received. LinearX={msg.linear.x}, AngularZ={msg.linear.z}",
+            flush=True,
+        )
+
+        linear_x = msg.linear.x
+        angular_z = msg.angular.z
+
+        # Use drive_root to bypass wheel physics and avoid crashes/configuration issues
+        self.modifications.append(
+            [
+                robot.drive_root,
+                {"linear_velocity_x": linear_x, "angular_velocity_z": angular_z},
+            ]
+        )
 
     def reset(self) -> None:
         """
@@ -67,14 +107,27 @@ class ROS_RobotManager(Node):
                            Must be in the format: robot_name:usd_path
         """
 
-        assert len(data.header.frame_id.split(":")) == 2, "The data should be in the format: robot_name:usd_path"
+        assert len(data.header.frame_id.split(":")) == 2, (
+            "The data should be in the format: robot_name:usd_path"
+        )
         robot_name, usd_path = data.header.frame_id.split(":")
         p = [data.pose.position.x, data.pose.position.y, data.pose.position.z]
-        q = [data.pose.orientation.w, data.pose.orientation.x, data.pose.orientation.y, data.pose.orientation.z]
+        q = [
+            data.pose.orientation.w,
+            data.pose.orientation.x,
+            data.pose.orientation.y,
+            data.pose.orientation.z,
+        ]
         self.modifications.append(
             [
                 self.RM.add_robot,
-                {"usd_path": usd_path, "robot_name": robot_name, "p": p, "q": q, "domain_id": self.domain_id},
+                {
+                    "usd_path": usd_path,
+                    "robot_name": robot_name,
+                    "p": p,
+                    "q": q,
+                    "domain_id": self.domain_id,
+                },
             ]
         )
 
@@ -88,8 +141,18 @@ class ROS_RobotManager(Node):
 
         robot_name = data.header.frame_id
         p = [data.pose.position.x, data.pose.position.y, data.pose.position.z]
-        q = [data.pose.orientation.x, data.pose.orientation.y, data.pose.orientation.z, data.pose.orientation.w]
-        self.modifications.append([self.RM.teleport_robot, {"robot_name": robot_name, "position": p, "orientation": q}])
+        q = [
+            data.pose.orientation.x,
+            data.pose.orientation.y,
+            data.pose.orientation.z,
+            data.pose.orientation.w,
+        ]
+        self.modifications.append(
+            [
+                self.RM.teleport_robot,
+                {"robot_name": robot_name, "position": p, "orientation": q},
+            ]
+        )
 
     def reset_robot(self, data: String) -> None:
         """

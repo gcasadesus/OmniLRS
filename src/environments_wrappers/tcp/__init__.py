@@ -1,0 +1,5 @@
+from src.environments_wrappers.tcp.simulation_manager_tcp import TCP_SimulationManager
+from src.environments_wrappers.tcp.lunalab_tcp import TCP_LunalabManager
+from src.environments_wrappers.tcp.lunaryard_tcp import TCP_LunaryardManager
+from src.environments_wrappers.tcp.largescale_tcp import TCP_LargeScaleManager
+from src.environments_wrappers.tcp.robot_manager_tcp import TCP_RobotManager

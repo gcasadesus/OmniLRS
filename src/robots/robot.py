@@ -1,5 +1,7 @@
 __author__ = "Antoine Richard, Junnosuke Kamohara"
-__copyright__ = "Copyright 2023-24, Space Robotics Lab, SnT, University of Luxembourg, SpaceR"
+__copyright__ = (
+    "Copyright 2023-24, Space Robotics Lab, SnT, University of Luxembourg, SpaceR"
+)
 __license__ = "BSD 3-Clause"
 __version__ = "2.0.0"
 __maintainer__ = "Antoine Richard"
@@ -29,12 +31,16 @@ from src.configurations.robot_confs import RobotManagerConf
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
-from src.environments.utils import transform_orientation_from_xyzw_into_xyz, transform_orientation_into_xyz
+from src.environments.utils import (
+    transform_orientation_from_xyzw_into_xyz,
+    transform_orientation_into_xyz,
+)
 from src.robots.subsystems_manager import RobotSubsystemsManager
 from src.robots.yamcs_TMTC import YamcsTMTC
 from omni.isaac.sensor import Camera
 
 from isaacsim.sensors.physics import _sensor
+
 
 class RobotManager:
     """
@@ -140,12 +146,12 @@ class RobotManager:
         q: Tuple[float, float, float, float] = [0, 0, 0, 1],
         domain_id: int = None,
         wheel_joints: dict = {},
-        camera_conf :dict={},
-        imu_sensor_path:str="",
-        dimensions:dict={},
-        turn_speed_coef:float=1,
-        pos_relative_to_prim:str="",
-        solar_panel_joint:str="",
+        camera_conf: dict = {},
+        imu_sensor_path: str = "",
+        dimensions: dict = {},
+        turn_speed_coef: float = 1,
+        pos_relative_to_prim: str = "",
+        solar_panel_joint: str = "",
     ) -> None:
         """
         Add a robot to the scene.
@@ -189,7 +195,7 @@ class RobotManager:
         robot_name: str = None,
         target_links: List[str] = None,
         pose_base_link: str = None,
-        world = None,
+        world=None,
     ) -> None:
         """
         Add a robot rigid group to the scene.
@@ -230,7 +236,10 @@ class RobotManager:
             warnings.warn("Robot does not exist. Ignoring request.")
 
     def teleport_robot(
-        self, robot_name: str = None, position: np.ndarray = None, orientation: np.ndarray = None
+        self,
+        robot_name: str = None,
+        position: np.ndarray = None,
+        orientation: np.ndarray = None,
     ) -> None:
         """
         Teleport a specific robot to a specific position and orientation.
@@ -245,9 +254,17 @@ class RobotManager:
             print("available robots: ", self.robots.keys())
 
     def start_TMTC(self):
-        robot_name = list(self.robots.keys())[0].replace("/","") # assumes only 1 robot for workshop use
-        self.TMTC = YamcsTMTC(self.RM_conf.yamcs_tmtc, robot_name, self.robots_RG, self.robots["/" + robot_name])
+        robot_name = list(self.robots.keys())[0].replace(
+            "/", ""
+        )  # assumes only 1 robot for workshop use
+        self.TMTC = YamcsTMTC(
+            self.RM_conf.yamcs_tmtc,
+            robot_name,
+            self.robots_RG,
+            self.robots["/" + robot_name],
+        )
         self.TMTC.start_streaming_data()
+
 
 class Robot:
     """
@@ -265,13 +282,12 @@ class Robot:
         is_ROS2: bool = False,
         domain_id: int = 0,
         wheel_joints: Dict = {},
-        camera_conf:Dict = {},
-        imu_sensor_path:str = "",
-        dimensions:dict = {},
-        turn_speed_coef:float=1,
-        pos_relative_to_prim:str = "",
-        solar_panel_joint:str = "",
-
+        camera_conf: Dict = {},
+        imu_sensor_path: str = "",
+        dimensions: dict = {},
+        turn_speed_coef: float = 1,
+        pos_relative_to_prim: str = "",
+        solar_panel_joint: str = "",
     ) -> None:
         """
         Args:
@@ -293,7 +309,7 @@ class Robot:
         self.dc = _dynamic_control.acquire_dynamic_control_interface()
         self.root_body_id = None
         self._wheel_joint_names = wheel_joints
-        self._dofs = {} # dof = Degree of Freedom
+        self._dofs = {}  # dof = Degree of Freedom
         self._camera_conf = camera_conf
         self._cameras = {}
         self._depth_cameras = {}
@@ -301,7 +317,7 @@ class Robot:
         self.turn_speed_coef = turn_speed_coef
         self.subsystems = RobotSubsystemsManager(pos_relative_to_prim)
         self._imu_sensor_interface = _sensor.acquire_imu_sensor_interface()
-        self._imu_sensor_path:str = imu_sensor_path
+        self._imu_sensor_path: str = imu_sensor_path
         self._solar_panel_joint = solar_panel_joint
         self._solar_panel_dof = None
 
@@ -323,7 +339,11 @@ class Robot:
 
         selected_paths = []
         for prim in Usd.PrimRange(self.stage.GetPrimAtPath(self.robot_path)):
-            l = [attr for attr in prim.GetAttributes() if attr.GetName().split(":")[0] == "graph"]
+            l = [
+                attr
+                for attr in prim.GetAttributes()
+                if attr.GetName().split(":")[0] == "graph"
+            ]
             if l:
                 selected_paths.append(prim.GetPath())
 
@@ -359,54 +379,83 @@ class Robot:
         self._initialize_cameras()
 
     def get_streaming_cam_resolution(self):
-        return (self._camera_conf["resolutions"]["low"][0], self._camera_conf["resolutions"]["low"][1])
-    
+        return (
+            self._camera_conf["resolutions"]["low"][0],
+            self._camera_conf["resolutions"]["low"][1],
+        )
+
     def get_high_cam_resolution(self):
-        return (self._camera_conf["resolutions"]["high"][0], self._camera_conf["resolutions"]["high"][1])
-        
+        return (
+            self._camera_conf["resolutions"]["high"][0],
+            self._camera_conf["resolutions"]["high"][1],
+        )
+
     def _initialize_cameras(self) -> None:
         # Camera is a wrapper, therefore it just wraps around the camera instance if it already exists
         # otherwise it creates a new camera instance on the provided prim_path
         if "resolutions" not in self._camera_conf:
             return
-        
+
         resolutions = list(self._camera_conf.get("resolutions").keys())
 
         for res in resolutions:
-            self._cameras[res] = Camera(self._camera_conf["prim_path"], 
-                                resolution=(self._camera_conf["resolutions"][res][0], self._camera_conf["resolutions"][res][1]))
+            self._cameras[res] = Camera(
+                self._camera_conf["prim_path"],
+                resolution=(
+                    self._camera_conf["resolutions"][res][0],
+                    self._camera_conf["resolutions"][res][1],
+                ),
+            )
             self._cameras[res].initialize()
 
         for res in resolutions:
-            self._depth_cameras[res] = Camera(self._camera_conf["prim_path"], 
-                                resolution=(self._camera_conf["resolutions"][res][0], self._camera_conf["resolutions"][res][1]))
+            self._depth_cameras[res] = Camera(
+                self._camera_conf["prim_path"],
+                resolution=(
+                    self._camera_conf["resolutions"][res][0],
+                    self._camera_conf["resolutions"][res][1],
+                ),
+            )
             self._depth_cameras[res].initialize()
             self._depth_cameras[res].add_distance_to_image_plane_to_frame()
 
     def get_rgba_camera_view(self, resolution) -> np.ndarray:
         return self._cameras[resolution].get_rgba()
-    
+
     def get_depth_camera_view(self, resolution) -> np.ndarray:
         """Returns depth image in meters as (H, W) float32 array."""
         depth = self._depth_cameras[resolution].get_depth()
         print("depth")
         print(depth)
         return depth
-    
+
     def get_imu_readings(self):
         # https://docs.isaacsim.omniverse.nvidia.com/4.5.0/sensors/isaacsim_sensors_physics_imu.html#reading-sensor-output
-        sensor_reading = self._imu_sensor_interface.get_sensor_reading(self._imu_sensor_path, use_latest_data = True, read_gravity = True)
-        linear_acceleration = {"ax": sensor_reading.lin_acc_x, "ay": sensor_reading.lin_acc_y, "az": sensor_reading.lin_acc_z}
-        angular_velocity = {"gx":sensor_reading.ang_vel_x, "gy":sensor_reading.ang_vel_y, "gz":sensor_reading.ang_vel_z} 
-        
-        # orientation = sensor_reading.orientation # w, x, y, z 
-        orientation = sensor_reading.orientation # x, y, z, w
-        xyz_orientation = transform_orientation_from_xyzw_into_xyz(orientation) 
-        orientation = {"roll":-float(xyz_orientation[0]), "pitch":-float(xyz_orientation[1]), "yaw":float(xyz_orientation[2])}
+        sensor_reading = self._imu_sensor_interface.get_sensor_reading(
+            self._imu_sensor_path, use_latest_data=True, read_gravity=True
+        )
+        linear_acceleration = {
+            "ax": sensor_reading.lin_acc_x,
+            "ay": sensor_reading.lin_acc_y,
+            "az": sensor_reading.lin_acc_z,
+        }
+        angular_velocity = {
+            "gx": sensor_reading.ang_vel_x,
+            "gy": sensor_reading.ang_vel_y,
+            "gz": sensor_reading.ang_vel_z,
+        }
+
+        # orientation = sensor_reading.orientation # w, x, y, z
+        orientation = sensor_reading.orientation  # x, y, z, w
+        xyz_orientation = transform_orientation_from_xyzw_into_xyz(orientation)
+        orientation = {
+            "roll": -float(xyz_orientation[0]),
+            "pitch": -float(xyz_orientation[1]),
+            "yaw": float(xyz_orientation[2]),
+        }
 
         # print(linear_acceleration, angular_velocity, orientation)
         return linear_acceleration, angular_velocity, orientation
-
 
     def get_pose(self) -> List[float]:
         """
@@ -418,7 +467,6 @@ class Robot:
             self.get_root_rigid_body_path()
         pose = self.dc.get_rigid_body_pose(self.root_body_id)
         return pose.p, pose.r
-    
 
     def set_reset_pose(self, position: np.ndarray, orientation: np.ndarray) -> None:
         """
@@ -470,11 +518,6 @@ class Robot:
         self._set_wheels_velocity(linear_velocity, "right")
 
     def drive_turn(self, wheel_speed):
-        print(wheel_speed)
-        if (wheel_speed > 0):
-            print("turns left")
-        else:
-            print("turns right")
         self._set_wheels_velocity(-wheel_speed, "left")
         self._set_wheels_velocity(wheel_speed, "right")
 
@@ -482,11 +525,50 @@ class Robot:
         self._set_wheels_velocity(0, "left")
         self._set_wheels_velocity(0, "right")
 
-    def _set_wheels_velocity(self, velocity, side:str):
+    def drive_root(self, linear_velocity_x, angular_velocity_z):
+        """
+        Drives the robot by directly setting the root body velocity, bypassing wheel physics.
+        This is useful for debugging or when wheel joints are not properly configured.
+        """
+        if self.root_body_id is None:
+            # Try to initialize it if missing
+            art = self._get_art()
+            if art:
+                self.root_body_id = self.dc.get_articulation_root_body(art)
+
+        if self.root_body_id is None or self.root_body_id == 0:
+            print("Warning: Cannot drive root, root_body_id is invalid.")
+            return
+
+        p, q = self.get_pose()
+
+        # Calculate world linear velocity
+        # Assume q has .x, .y, .z, .w attributes (common in Isaac Sim python bindings)
+        try:
+            # Scipy rotation expects [x, y, z, w]
+            rot = R.from_quat([q.x, q.y, q.z, q.w])
+            v_world = rot.apply([linear_velocity_x, 0, 0])
+        except Exception as e:
+            print(f"Error calculating rotation in drive_root: {e}")
+            return
+
+        self.dc.set_rigid_body_linear_velocity(self.root_body_id, v_world)
+
+        # Set angular velocity (local Z is usually global Z for planar movement,
+        # but technically we should rotate this too if robot pitches/rolls.
+        # For simple rover on ground, global Z is fine)
+        self.dc.set_rigid_body_angular_velocity(
+            self.root_body_id, [0, 0, angular_velocity_z]
+        )
+
+    def _set_wheels_velocity(self, velocity, side: str):
         self._init_dofs()
 
-        if side not in ["left","right"]:
+        if side not in ["left", "right"]:
             print("Wrong side param:", side, "Side can only be [left] or [right].")
+            return
+
+        if side not in self._dofs:
             return
 
         for dof in self._dofs[side]:
@@ -494,9 +576,9 @@ class Robot:
 
     def get_wheels_joint_angles(self):
         self._init_dofs()
-        
+
         joint_angles = []
-        for side in ["left","right"]:
+        for side in ["left", "right"]:
             for dof in self._dofs[side]:
                 joint_angle = self.dc.get_dof_position(dof)
                 joint_angles.append(joint_angle)
@@ -504,23 +586,20 @@ class Robot:
         return joint_angles
 
     def _init_dofs(self):
-        #NOTE idealy, this would be initialized inside load(),
+        # NOTE idealy, this would be initialized inside load(),
         # however, for an unknown reason art, and dc do not work well when invoked there
         # thus not populating dofs correctly
         # therefore, it was implemented as singleton, and should be called at the begging of every commanding function
         #
-        # more about the use of dofs for robot movement can be read on: 
+        # more about the use of dofs for robot movement can be read on:
         # https://docs.isaacsim.omniverse.nvidia.com/5.0.0/python_scripting/robots_simulation.html#velocity-control
         if not self._wheel_joint_names:
             return
 
         if "left" in list(self._dofs.keys()):
-            return # it means it is already initialized
-        
-        self._dofs = {
-            "left": [],
-            "right": []
-        }
+            return  # it means it is already initialized
+
+        self._dofs = {"left": [], "right": []}
         art = self._get_art()
 
         for rover_side in ["left", "right"]:
@@ -531,7 +610,9 @@ class Robot:
     def _init_solar_panel_dof(self):
         if self._solar_panel_dof == None and self._solar_panel_joint != "":
             art = self._get_art()
-            self._solar_panel_dof = self.dc.find_articulation_dof(art, self._solar_panel_joint)
+            self._solar_panel_dof = self.dc.find_articulation_dof(
+                art, self._solar_panel_joint
+            )
 
     def deploy_solar_panel(self):
         self._init_solar_panel_dof()
@@ -548,7 +629,13 @@ class RobotRigidGroup:
     It is used to retrieve world pose, and contact forces, or apply force/torque.
     """
 
-    def __init__(self, root_path: str = "/Robots", robot_name: str = None, target_links: List[str] = None, base_link:str=None):
+    def __init__(
+        self,
+        root_path: str = "/Robots",
+        robot_name: str = None,
+        target_links: List[str] = None,
+        base_link: str = None,
+    ):
         """
         Args:
             root_path (str): The root path of the robots.
@@ -647,22 +734,37 @@ class RobotRigidGroup:
             position, orientation = prim.get_world_pose()
 
             # Rearrange quaternion from (w, x, y, z) to (x, y, z, w) for scipy
-            quaternion = [orientation[1], orientation[2], orientation[3], orientation[0]]
+            quaternion = [
+                orientation[1],
+                orientation[2],
+                orientation[3],
+                orientation[0],
+            ]
             rotation = R.from_quat(quaternion)
 
             # Remove pitch rotation to align wheel's local frame with global frame
             pitch_angle = 2 * np.arctan2(rotation.as_quat()[1], rotation.as_quat()[3])
-            pitch_correction_quat = [0, -np.sin(pitch_angle / 2), 0, np.cos(pitch_angle / 2)]
+            pitch_correction_quat = [
+                0,
+                -np.sin(pitch_angle / 2),
+                0,
+                np.cos(pitch_angle / 2),
+            ]
             inverse_pitch_rotation = R.from_quat(pitch_correction_quat)
             rotation_corrected = rotation * inverse_pitch_rotation
 
             # Convert back to (w, x, y, z) and store results
             quaternion_corrected = rotation_corrected.as_quat()
-            orientation_corrected = [quaternion_corrected[3], quaternion_corrected[0], quaternion_corrected[1], quaternion_corrected[2]]
+            orientation_corrected = [
+                quaternion_corrected[3],
+                quaternion_corrected[0],
+                quaternion_corrected[1],
+                quaternion_corrected[2],
+            ]
             positions[i, :] = position
             orientations[i, :] = orientation_corrected
         return positions, orientations
-    
+
     def get_pose_of_base_link(self) -> Tuple[list, list]:
         """
         Returns a pair of value representing the robot's pose, and orientation respectively, based on the base_link.
@@ -704,7 +806,7 @@ class RobotRigidGroup:
         n_links = len(self.target_links)
         contact_forces = np.zeros((n_links, 3))
         for i, prim_view in enumerate(self.prim_views):
-            contact_force = prim_view.get_net_contact_forces(dt = self.dt).squeeze()
+            contact_force = prim_view.get_net_contact_forces(dt=self.dt).squeeze()
             contact_forces[i, :] = contact_force
         return contact_forces
 
@@ -723,4 +825,6 @@ class RobotRigidGroup:
         assert forces.shape[0] == n_links, "given force does not have matching shape."
         assert torques.shape[0] == n_links, "given torque does not have matching shape."
         for i, prim_view in enumerate(self.prim_views):
-            prim_view.apply_forces_and_torques_at_pos(forces=forces[i], torques=torques[i], is_global=False)
+            prim_view.apply_forces_and_torques_at_pos(
+                forces=forces[i], torques=torques[i], is_global=False
+            )

@@ -1,6 +1,7 @@
 renderer:
   renderer: "RayTracedLighting"
   headless: False
+  livestream: 2 # 2 = WebRTC
   samples_per_pixel_per_frame: 32
   max_bounces: 6
   max_specular_transmission_bounces: 6

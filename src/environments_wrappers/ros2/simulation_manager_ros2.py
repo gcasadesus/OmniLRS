@@ -1,5 +1,7 @@
 __author__ = "Antoine Richard, Junnosuke Kamohara"
-__copyright__ = "Copyright 2023-24, Space Robotics Lab, SnT, University of Luxembourg, SpaceR"
+__copyright__ = (
+    "Copyright 2023-24, Space Robotics Lab, SnT, University of Luxembourg, SpaceR"
+)
 __license__ = "BSD 3-Clause"
 __version__ = "2.0.0"
 __maintainer__ = "Antoine Richard"
@@ -36,7 +38,9 @@ class Rate:
     passed, the object will only use the information provided by dt.
     """
 
-    def __init__(self, freq: float = None, dt: float = None, is_disabled: bool = False) -> None:
+    def __init__(
+        self, freq: float = None, dt: float = None, is_disabled: bool = False
+    ) -> None:
         """
         Args:
           freq (float): The frequency at which the loop should be executed.
@@ -48,7 +52,9 @@ class Rate:
         if not self.is_disabled:
             if dt is None:
                 if freq is None:
-                    raise ValueError("You must provide either a frequency or a delta time.")
+                    raise ValueError(
+                        "You must provide either a frequency or a delta time."
+                    )
                 else:
                     self.dt = 1.0 / freq
             else:
@@ -170,7 +176,9 @@ class ROS2_SimulationManager:
 
         # Lab manager thread
         self.ROSLabManager = ROS2_LMF(
-            cfg, is_simulation_alive=self.simulation_app.is_running, close_simulation=self.simulation_app.close
+            cfg,
+            is_simulation_alive=self.simulation_app.is_running,
+            close_simulation=self.simulation_app.close,
         )
         self.exec1 = Executor()
         self.exec1.add_node(self.ROSLabManager)
@@ -191,16 +199,24 @@ class ROS2_SimulationManager:
         # 24 topics. More than that and you won't reveive any messages.
         # Keep it in mind if you want to go crazy with the ROS2 calls to modify the sim...
         if "terrain_manager" in cfg["environment"].keys():
-            self.terrain_manager_conf: TerrainManagerConf = cfg["environment"]["terrain_manager"]
-            self.deform_delay = self.terrain_manager_conf.moon_yard.deformation_engine.delay
-            self.enable_deformation = self.terrain_manager_conf.moon_yard.deformation_engine.enable
+            self.terrain_manager_conf: TerrainManagerConf = cfg["environment"][
+                "terrain_manager"
+            ]
+            self.deform_delay = (
+                self.terrain_manager_conf.moon_yard.deformation_engine.delay
+            )
+            self.enable_deformation = (
+                self.terrain_manager_conf.moon_yard.deformation_engine.enable
+            )
         else:
             self.enable_deformation = False
 
         # Preload the assets
         if cfg["environment"]["name"] == "LargeScale":
             height, quat = self.ROSLabManager.LC.get_height_and_normal((0.0, 0.0, 0.0))
-            self.ROSRobotManager.RM.preload_robot_at_pose(self.world, (0, 0, height + 0.5), (1, 0, 0, 0))
+            self.ROSRobotManager.RM.preload_robot_at_pose(
+                self.world, (0, 0, height + 0.5), (1, 0, 0, 0)
+            )
         else:
             self.ROSRobotManager.RM.preload_robot(self.world)
         self.ROSLabManager.LC.add_robot_manager(self.ROSRobotManager.RM)
@@ -233,7 +249,9 @@ class ROS2_SimulationManager:
                     self.ROSLabManager.trigger_reset = False
                 self.ROSRobotManager.apply_modifications()
                 if self.enable_deformation:
-                    if self.world.current_time_step_index >= (self.deform_delay * self.world.get_physics_dt()):
+                    if self.world.current_time_step_index >= (
+                        self.deform_delay * self.world.get_physics_dt()
+                    ):
                         self.ROSLabManager.LC.deform_terrain()
                         # self.ROSLabManager.LC.applyTerramechanics()
             if not self.ROSLabManager.monitor_thread_is_alive():
