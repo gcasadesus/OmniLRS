@@ -138,7 +138,41 @@ Step forward by N frames (useful when paused):
 
 ---
 
-## Robot Management
+### Get Simulation Status
+```json
+{"cmd": "get_status"}
+```
+**Response:**
+```json
+{
+  "success": true,
+  "playing": false,
+  "paused": true,
+  "current_time": 123.456
+}
+```
+
+### Get Robot State
+To retrieve the full state (pose, velocity) of all robots:
+```json
+{"cmd": "get_state"}
+```
+**Response:**
+```json
+{
+  "success": true,
+  "state": {
+    "/husky": {
+      "position": [5.0, 5.0, 0.5],
+      "orientation": [0, 0, 0, 1],
+      "linear_velocity": [0.5, 0.0]
+    }
+  }
+}
+```
+
+---
+
 
 ### Robot Velocity Control
 **Persistent velocity commands** - send once, robot continues moving until stopped.
@@ -153,7 +187,9 @@ Step forward by N frames (useful when paused):
 ```
 - `val[0]`: Linear velocity (m/s)
 - `val[1]`: Angular velocity (rad/s)
+- **Response:** `{"success": true}` (Minimal response for high performance)
 - **Default:** Wheel physics enabled (wheels rotate)
+
 
 **Stop Robot:**
 ```json
@@ -199,6 +235,52 @@ Step forward by N frames (useful when paused):
 ```
 - `true`: Wheel-based physics (realistic, wheels rotate)
 - `false`: Root-based driving (simpler, no wheel rotation)
+
+---
+
+### Camera Control
+Retrieve sensor data from robot's cameras.
+
+**Get RGB Image:**
+```json
+{
+  "cmd": "get_camera_image",
+  "robot_name": "/husky",
+  "camera": "left",
+  "resolution": "high"
+}
+```
+**Response:**
+```json
+{
+  "success": true,
+  "type": "png",
+  "data": "<base64_encoded_png_data>",
+  "shape": [720, 1280, 4]
+}
+```
+
+**Get Depth Map:**
+```json
+{
+  "cmd": "get_camera_depth",
+  "robot_name": "/husky",
+  "camera": "left",
+  "resolution": "high"
+}
+```
+**Response:**
+```json
+{
+  "success": true,
+  "type": "npy",
+  "data": "<base64_encoded_float32_bytes>",
+  "params": {
+    "dtype": "float32",
+    "shape": [720, 1280]
+  }
+}
+```
 
 ---
 
@@ -358,6 +440,7 @@ No terrain switching or rocks management available.
 ```
 
 ### Robot State Response
+(Response to `{"cmd": "get_state"}`)
 ```json
 {
   "success": true,
@@ -371,6 +454,7 @@ No terrain switching or rocks management available.
   }
 }
 ```
+
 
 ---
 

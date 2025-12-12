@@ -27,7 +27,17 @@ sock.connect(("127.0.0.1", 5555))
 ```
 - `linear_x`: Forward/backward velocity (m/s)
 - `angular_z`: Rotation velocity (rad/s)
+- **Return:** `{"success": true}` (Does NOT return full state)
 - **Note:** Commands persist until changed. Send `[0.0, 0.0]` to stop.
+
+### Get Robot State
+```json
+{
+  "cmd": "get_state"
+}
+```
+- Returns full state dictionary for all robots (position, orientation, velocity).
+
 
 ### Teleport Robot
 ```json
@@ -75,6 +85,34 @@ sock.connect(("127.0.0.1", 5555))
 - `true`: Use wheel-based physics (wheels rotate)
 - `false`: Use root driving (no wheel rotation, but more reliable)
 - **Default:** `true`
+
+---
+
+---
+
+## Camera Commands
+
+### Get Camera Image (RGB)
+```json
+{
+  "cmd": "get_camera_image",
+  "robot_name": "/husky",
+  "camera": "left",
+  "resolution": "high"
+}
+```
+- Returns base64 encoded PNG image.
+
+### Get Camera Depth
+```json
+{
+  "cmd": "get_camera_depth",
+  "robot_name": "/husky",
+  "camera": "left",
+  "resolution": "high"
+}
+```
+- Returns base64 encoded raw float32 bytes (numpy compatible).
 
 ---
 

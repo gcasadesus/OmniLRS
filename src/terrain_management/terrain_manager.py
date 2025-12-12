@@ -1,5 +1,7 @@
 __author__ = "Antoine Richard, Junnosuke Kamohara"
-__copyright__ = "Copyright 2023-24, Space Robotics Lab, SnT, University of Luxembourg, SpaceR"
+__copyright__ = (
+    "Copyright 2023-24, Space Robotics Lab, SnT, University of Luxembourg, SpaceR"
+)
 __license__ = "BSD 3-Clause"
 __version__ = "2.0.0"
 __maintainer__ = "Antoine Richard"
@@ -66,8 +68,12 @@ class TerrainManager:
         self._mesh_path = self._root_path + "/Terrain/terrain_mesh"
 
         pxr_utils.createXform(self._stage, self._root_path, add_default_op=True)
-        pxr_utils.createXform(self._stage, self._root_path + "/Terrain", add_default_op=True)
-        pxr_utils.createXform(self._stage, self._root_path + "/Terrain/terrain_mesh", add_default_op=True)
+        pxr_utils.createXform(
+            self._stage, self._root_path + "/Terrain", add_default_op=True
+        )
+        pxr_utils.createXform(
+            self._stage, self._root_path + "/Terrain/terrain_mesh", add_default_op=True
+        )
 
         self.buildGrid()
         self.fetchPreGeneratedDEMs()
@@ -127,8 +133,12 @@ class TerrainManager:
 
         self._DEM = np.zeros((self._sim_length, self._sim_width), dtype=np.float32)
         self._mask = np.zeros((self._sim_length, self._sim_width), dtype=np.float32)
-        self._DEM[: DEM.shape[0], : DEM.shape[1]] = DEM[: self._sim_length, : self._sim_width]
-        self._mask[: mask.shape[0], : mask.shape[1]] = mask[: self._sim_length, : self._sim_width]
+        self._DEM[: DEM.shape[0], : DEM.shape[1]] = DEM[
+            : self._sim_length, : self._sim_width
+        ]
+        self._mask[: mask.shape[0], : mask.shape[1]] = mask[
+            : self._sim_length, : self._sim_width
+        ]
 
     @staticmethod
     def gridIndex(x: int, y: int, stride: int) -> int:
@@ -229,7 +239,9 @@ class TerrainManager:
             mesh.GetFaceVertexIndicesAttr().Set(idxs)
             mesh.GetFaceVertexCountsAttr().Set([3] * len(idxs))
             UsdGeom.Primvar(mesh.GetDisplayColorAttr()).SetInterpolation("vertex")
-            pv = UsdGeom.PrimvarsAPI(mesh.GetPrim()).CreatePrimvar("st", Sdf.ValueTypeNames.Float2Array)
+            pv = UsdGeom.PrimvarsAPI(mesh.GetPrim()).CreatePrimvar(
+                "st", Sdf.ValueTypeNames.Float2Array
+            )
             pv.Set(uvs)
             pv.SetInterpolation("faceVarying")
 
@@ -238,7 +250,9 @@ class TerrainManager:
 
         if update_default_op:
             self._id += 1
-            pxr_utils.setDefaultOps(mesh, self._mesh_pos, self._mesh_rot, self._mesh_scale)
+            pxr_utils.setDefaultOps(
+                mesh, self._mesh_pos, self._mesh_rot, self._mesh_scale
+            )
 
     def updateTerrainCollider(self):
         """
@@ -256,14 +270,23 @@ class TerrainManager:
         if update_collider:
             pxr_utils.deletePrim(self._stage, self._mesh_path)
             self._sim_verts[:, -1] = np.flip(self._DEM, 0).flatten()
-            with wp.ScopedTimer("mesh update"):
-                self.renderMesh(self._sim_verts, self._indices, self._sim_uvs, update_default_op=True)
+            # Disable timer to avoid CUDA sync and log spam
+            with wp.ScopedTimer("mesh update", active=False):
+                self.renderMesh(
+                    self._sim_verts,
+                    self._indices,
+                    self._sim_uvs,
+                    update_default_op=True,
+                )
             self.updateTerrainCollider()
             self.autoLabel()
-            pxr_utils.applyMaterialFromPath(self._stage, self._mesh_path, self._texture_path)
+            pxr_utils.applyMaterialFromPath(
+                self._stage, self._mesh_path, self._texture_path
+            )
         else:
             self._sim_verts[:, -1] = np.flip(self._DEM, 0).flatten()
-            with wp.ScopedTimer("mesh update"):
+            # Disable timer to avoid CUDA sync and log spam
+            with wp.ScopedTimer("mesh update", active=False):
                 self.renderMesh(self._sim_verts, self._indices, self._sim_uvs)
 
     def randomizeTerrain(self) -> None:
@@ -275,7 +298,10 @@ class TerrainManager:
         self.update(update_collider=True)
 
     def deformTerrain(
-        self, world_positions: np.ndarray, world_orientations: np.ndarray, contact_forces: np.ndarray
+        self,
+        world_positions: np.ndarray,
+        world_orientations: np.ndarray,
+        contact_forces: np.ndarray,
     ) -> None:
         """
         Deforms the terrain based on the given body transforms.
@@ -286,7 +312,9 @@ class TerrainManager:
             contact_forces (np.ndarray): the contact forces of the bodies.
         """
 
-        self._DEM, self._mask = self._G.deform(world_positions, world_orientations, contact_forces)
+        self._DEM, self._mask = self._G.deform(
+            world_positions, world_orientations, contact_forces
+        )
         self.update(update_collider=False)
 
     def loadTerrainByName(self, name: str) -> None:
@@ -299,7 +327,9 @@ class TerrainManager:
 
         self.loadDEMAndMask(name)
         if self._augmentation:
-            self._DEM, self._mask, self._craters_data = self._G.augment(self._DEM, self._mask)
+            self._DEM, self._mask, self._craters_data = self._G.augment(
+                self._DEM, self._mask
+            )
         else:
             self._G.register_terrain(self._DEM, self._mask)
         self.update(update_collider=True)

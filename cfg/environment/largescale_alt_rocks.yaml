@@ -133,6 +133,9 @@ robots_settings:
         orientation: [1, 0, 0, 0]
       domain_id: 0
       base_link: "base_link"
+      wheel_joints:
+        left: ["front_left_wheel", "rear_left_wheel"]
+        right: ["front_right_wheel", "rear_right_wheel"]
       target_links: ["front_left_wheel_link", "front_right_wheel_link", "rear_left_wheel_link", "rear_right_wheel_link"]
       camera:
         prim_path: "/Robots/husky/d455/RSD455/Camera_OmniVision_OV9782_Left"

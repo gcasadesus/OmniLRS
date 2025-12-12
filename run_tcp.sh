@@ -28,7 +28,17 @@ if [ "$DISPLAY_ENABLED" = "true" ]; then
 fi
 
 # Stop any existing container
+echo "Cleaning up existing container..."
 docker stop isaac-sim-omnilrs-container 2>/dev/null || true
+docker rm -f isaac-sim-omnilrs-container 2>/dev/null || true
+
+# Wait for container to be fully removed
+while docker ps -a | grep -q isaac-sim-omnilrs-container; do
+    echo "Waiting for container to be removed..."
+    sleep 1
+    docker rm -f isaac-sim-omnilrs-container 2>/dev/null || true
+done
+
 
 # Common Docker arguments
 DOCKER_ARGS=(

@@ -31,8 +31,12 @@ class TCP_LunalabManager:
 
         # Initialize the TCP Robot Manager with RobotManager reference
         self.robot_manager = TCP_RobotManager(
-            self.RM.robots, self.physics_manager, self.RM
+            robots=self.RM.robots,
+            physics_manager=self.physics_manager,
+            robot_manager=self.RM,
         )
+        self.deform_counter = 0
+        self.deform_interval = 10  # Update deformation every 10 steps
 
         logger.info("TCP Lunalab Manager initialized.")
 
@@ -187,6 +191,13 @@ class TCP_LunalabManager:
 
         # Apply persistent velocity commands every frame
         self.robot_manager.apply_persistent_commands()
+
+        # Update terrain deformation if enabled
+        # MOVED TO SIMULATION_MANAGER MAIN LOOP FOR PROPER SCHEDULING
+        # if self.LC.deformation_conf and self.LC.deformation_conf.enable:
+        #     if self.deform_counter % self.deform_interval == 0:
+        #         self.LC.deform_terrain()
+        #     self.deform_counter += 1
 
         # Return state
         return self.robot_manager.get_state()

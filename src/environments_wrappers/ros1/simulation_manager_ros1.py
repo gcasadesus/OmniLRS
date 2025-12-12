@@ -1,5 +1,7 @@
 __author__ = "Antoine Richard, Junnosuke Kamohara"
-__copyright__ = "Copyright 2023-24, Space Robotics Lab, SnT, University of Luxembourg, SpaceR"
+__copyright__ = (
+    "Copyright 2023-24, Space Robotics Lab, SnT, University of Luxembourg, SpaceR"
+)
 __license__ = "BSD 3-Clause"
 __version__ = "2.0.0"
 __maintainer__ = "Antoine Richard"
@@ -25,7 +27,9 @@ class ROS1_LabManagerFactory:
     def register(
         self,
         name: str,
-        lab_manager: Union[ROS_LunalabManager, ROS_LunaryardManager, ROS_LargeScaleManager],
+        lab_manager: Union[
+            ROS_LunalabManager, ROS_LunaryardManager, ROS_LargeScaleManager
+        ],
     ) -> None:
         """
         Registers a lab manager.
@@ -99,9 +103,15 @@ class ROS1_SimulationManager:
         # Penny for your thoughts "Josh".
         self.ROSLabManager = ROS1_LMF(cfg)
         if "terrain_manager" in cfg["environment"].keys():
-            self.terrain_manager_conf: TerrainManagerConf = cfg["environment"]["terrain_manager"]
-            self.deform_delay = self.terrain_manager_conf.moon_yard.deformation_engine.delay
-            self.enable_deformation = self.terrain_manager_conf.moon_yard.deformation_engine.enable
+            self.terrain_manager_conf: TerrainManagerConf = cfg["environment"][
+                "terrain_manager"
+            ]
+            self.deform_delay = (
+                self.terrain_manager_conf.moon_yard.deformation_engine.delay
+            )
+            self.enable_deformation = (
+                self.terrain_manager_conf.moon_yard.deformation_engine.enable
+            )
         else:
             self.enable_deformation = False
         self.world.reset()
@@ -109,11 +119,13 @@ class ROS1_SimulationManager:
         # Preload the assets
         if cfg["environment"]["name"] == "LargeScale":
             height, quat = self.ROSLabManager.LC.get_height_and_normal((0.0, 0.0, 0.0))
-            self.ROSLabManager.RM.preload_robot_at_pose(self.world, (0, 0, height + 0.5), (1, 0, 0, 0))
+            self.ROSLabManager.RM.preload_robot_at_pose(
+                self.world, (0, 0, height + 0.5), (1, 0, 0, 0)
+            )
         else:
             self.ROSLabManager.RM.preload_robot(self.world)
         self.ROSLabManager.LC.add_robot_manager(self.ROSLabManager.RM)
-        
+
         for _ in range(100):
             self.world.step(render=False)
         self.world.reset()

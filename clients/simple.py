@@ -57,18 +57,32 @@ try:
     else:
         print("Failed to send velocity command or get response.")
 
-    # Receive state (assuming this is a separate request or the last response)
-    # If the server sends state unsolicited, this might need a different approach.
-    # If it's a request, you'd send a command like {"cmd": "get_state"} first.
-    # For now, assuming the last response *is* the state or we need to explicitly ask.
-    # If the server sends state after the vel command, the 'response' above would be the state.
-    # If a separate request is needed:
-    # command = {"cmd": "get_state"} # Example command
-    # state_response = send_command_and_receive_response(sock, command)
-    # if state_response:
-    #     print(f"Robot state: {state_response}")
-    # else:
-    #     print("Failed to get robot state.")
+    # Receive state (New API: Explicit request needed)
+    # The velocity command now returns minimal response for performance.
+    # To get the state, we send a separate get_state command.
+    command = {"cmd": "get_state"}
+    state_response = send_command_and_receive_response(sock, command)
+    if state_response:
+        print(f"Robot state: {state_response}")
+    else:
+        print("Failed to get robot state.")
+
+    # Keep the script running to observe the robot moving
+    print("\nRobot is moving... keeping connection open for 5 seconds.")
+    for i in range(10):
+        time.sleep(1)
+        # Optional: Poll state to show it changing
+        state = send_command_and_receive_response(sock, {"cmd": "get_state"})
+        if state:
+            velocity = (
+                state.get("state", {}).get("/husky", {}).get("linear_velocity", "N/A")
+            )
+            print(f"t={i + 1}s: Linear Velocity = {velocity}")
+
+    # Stop the robot before exiting
+    print("\nStopping robot...")
+    command = {"/husky": {"cmd": "vel", "val": [0.0, 0.0]}}
+    send_command_and_receive_response(sock, command)
 
 except ConnectionRefusedError:
     print(

@@ -178,7 +178,7 @@ class TCP_RobotManager:
                 else:
                     # Store the command - it will be persistently applied each frame
                     self.last_cmd_vel[robot_name] = (linear_x, angular_z)
-                    logger.info(
+                    logger.debug(
                         f"Updated velocity for {robot_name}: linear={linear_x}, angular={angular_z}"
                     )
             else:
